@@ -5,7 +5,7 @@
 ## GitHubへ公開する手順
 
 1. ZIPファイルを解凍します。
-2. GitHubで `monogatari-no-tane` という新しいリポジトリを作ります。
+2. GitHubで `monogatarino-tane` という新しいリポジトリを作ります。
 3. リポジトリの「Add file」→「Upload files」を選びます。
 4. 解凍したフォルダ内のファイルを、すべてアップロードします。
 5. 「Commit changes」を押します。
@@ -14,7 +14,7 @@
 8. Branchを `main`、フォルダを `/(root)` にして「Save」を押します。
 9. 公開処理の完了後、次のURLで開けます。
 
-`https://nikonikoaniki-svg.github.io/monogatari-no-tane/`
+`https://nikonikoaniki-svg.github.io/monogatarino-tane/`
 
 ## ファイル構成
 
