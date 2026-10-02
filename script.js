@@ -36,6 +36,8 @@ const announcement = document.querySelector("#announcement");
 const loadError = document.querySelector("#load-error");
 const tooltip = document.querySelector("#meaning-tooltip");
 const meaningText = document.querySelector("#meaning-text");
+const backButton = document.querySelector("#back-button");
+const forwardButton = document.querySelector("#forward-button");
 
 let words = [];
 let categories = [];
@@ -46,6 +48,63 @@ let pinButtons = [];
 let pinned = [];
 let isSpinning = false;
 let openIndex = null;
+let history = [];
+let historyIndex = -1;
+const MAX_HISTORY = 4; // 現在＋3つ前まで
+
+
+function snapshotState() {
+  return {
+    words: reels.map((reel) => reel.current),
+    pinned: [...pinned],
+  };
+}
+
+function syncCurrentHistorySnapshot() {
+  if (historyIndex < 0 || !history[historyIndex]) return;
+  history[historyIndex] = snapshotState();
+}
+
+function pushHistorySnapshot() {
+  // 過去に戻った状態から新しく抽選した場合は、そこより先の履歴を捨てる。
+  if (historyIndex < history.length - 1) {
+    history = history.slice(0, historyIndex + 1);
+  }
+
+  history.push(snapshotState());
+  if (history.length > MAX_HISTORY) history.shift();
+  historyIndex = history.length - 1;
+  updateHistoryControls();
+}
+
+function restoreHistory(index) {
+  if (isSpinning || index < 0 || index >= history.length) return;
+  hideMeaning();
+  historyIndex = index;
+  const state = history[historyIndex];
+
+  pinned = [...state.pinned];
+  reels = state.words.map((item) => ({
+    previous: item,
+    current: item,
+  }));
+
+  reels.forEach((_, cellIndex) => {
+    renderReel(cellIndex, false, 0);
+    updatePinButton(cellIndex);
+  });
+  updateMakeButtonState();
+  updateHistoryControls();
+  announcement.textContent = `履歴の${historyIndex + 1}番目のことばに戻りました。`;
+}
+
+function updateHistoryControls() {
+  const canGoBack = !isSpinning && historyIndex > 0;
+  const canGoForward = !isSpinning && historyIndex >= 0 && historyIndex < history.length - 1;
+  backButton.disabled = !canGoBack;
+  forwardButton.hidden = !canGoForward;
+  forwardButton.disabled = !canGoForward;
+}
 
 function isStandaloneWord(item) {
   const hasJoinedNouns =
@@ -262,6 +321,7 @@ function togglePin(index) {
   pinned[index] = !pinned[index];
   updatePinButton(index);
   updateMakeButtonState();
+  syncCurrentHistorySnapshot();
   announcement.textContent = pinned[index]
     ? `${reels[index].current.word}をピン止めしました。`
     : `${reels[index].current.word}のピン止めを解除しました。`;
@@ -332,6 +392,7 @@ function setSpinning(spinning) {
     button.disabled = spinning;
   });
   updateMakeButtonState();
+  updateHistoryControls();
 }
 
 async function makeSeeds() {
@@ -387,6 +448,7 @@ async function makeSeeds() {
   );
 
   setSpinning(false);
+  pushHistorySnapshot();
   announcement.textContent = `固定したことばを残して、${spinningIndexes.length}個のことばを選び直しました。`;
 }
 
@@ -406,6 +468,7 @@ async function start() {
     pinned = Array(reels.length).fill(false);
     createCells();
     setSpinning(false);
+    pushHistorySnapshot();
     announcement.textContent = "9つのことばが表示されています。";
   } catch (error) {
     console.error(error);
@@ -416,6 +479,8 @@ async function start() {
 }
 
 makeButton.addEventListener("click", makeSeeds);
+backButton.addEventListener("click", () => restoreHistory(historyIndex - 1));
+forwardButton.addEventListener("click", () => restoreHistory(historyIndex + 1));
 window.addEventListener("resize", () => {
   fitAllText();
   if (openIndex !== null) placeTooltip(cells[openIndex]);

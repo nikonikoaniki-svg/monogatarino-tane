@@ -444,3 +444,54 @@ h1 {
 .is-spinning .seed-cell.is-pinned .word {
   color: var(--ink);
 }
+
+
+/* History controls */
+.history-controls {
+  display: flex;
+  min-height: 42px;
+  margin-top: 18px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.history-button {
+  min-width: 92px;
+  height: 38px;
+  border: 1px solid #9d9487;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.92);
+  padding: 0 14px;
+  color: #5f584e;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 7px rgba(37, 31, 23, 0.08);
+}
+
+.history-button:hover:not(:disabled),
+.history-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.history-button:focus-visible {
+  outline: 2px solid rgba(196, 75, 47, 0.28);
+  outline-offset: 2px;
+}
+
+.history-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.history-button[hidden] {
+  display: none;
+}
+
+.history-controls + .make-button {
+  margin-top: 10px;
+}
