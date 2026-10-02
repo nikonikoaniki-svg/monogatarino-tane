@@ -506,3 +506,8 @@ h1 {
     font-size: 15px;
   }
 }
+
+.cell-history-button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}

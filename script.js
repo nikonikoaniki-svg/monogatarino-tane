@@ -98,7 +98,7 @@ function updateCellHistoryControls(index) {
 
   const canGoBack = !isSpinning && pointer > 0;
   const canGoForward = !isSpinning && pointer < history.length - 1;
-  backButton.hidden = !canGoBack;
+  backButton.hidden = false;
   backButton.disabled = !canGoBack;
   forwardButton.hidden = !canGoForward;
   forwardButton.disabled = !canGoForward;
@@ -368,7 +368,7 @@ function createCells() {
     cellBackButton.type = "button";
     cellBackButton.className = "cell-history-button cell-back-button";
     cellBackButton.textContent = "↶";
-    cellBackButton.hidden = true;
+    cellBackButton.hidden = false;
     cellBackButton.setAttribute("aria-label", "このマスだけ1つ前のことばに戻す");
     cellBackButton.addEventListener("click", (event) => {
       event.stopPropagation();
