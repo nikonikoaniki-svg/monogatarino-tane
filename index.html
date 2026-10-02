@@ -49,7 +49,7 @@
     />
     <meta name="twitter:image:alt" content="物語の種――9つのことばから、ひとつの物語を。" />
     <title>物語の種</title>
-    <link rel="stylesheet" href="style.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=9" />
   </head>
   <body>
     <main class="app-shell">
@@ -61,7 +61,7 @@
           <p class="lead">9つのことばから、ひとつの物語を。</p>
         </header>
 
-        <p class="hint">ことばにふれると意味が見られます。右上の「ピン」で固定できます。</p>
+        <p class="hint">ことばにふれると意味が見られます。右上の「ピン」で固定、小さな矢印でそのマスだけ戻せます。</p>
 
         <div
           id="seed-grid"
@@ -69,15 +69,6 @@
           aria-busy="true"
           aria-label="物語の種となる9つのことば"
         ></div>
-
-        <div class="history-controls" aria-label="ことばの履歴">
-          <button id="back-button" class="history-button" type="button" disabled>
-            <span aria-hidden="true">←</span> 戻す
-          </button>
-          <button id="forward-button" class="history-button" type="button" hidden>
-            進む <span aria-hidden="true">→</span>
-          </button>
-        </div>
 
         <button id="make-button" class="make-button" type="button" disabled>
           <span class="button-mark" aria-hidden="true">✦</span>
@@ -99,6 +90,6 @@
       <span id="meaning-text"></span>
     </div>
 
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
   </body>
 </html>

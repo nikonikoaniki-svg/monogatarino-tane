@@ -36,8 +36,6 @@ const announcement = document.querySelector("#announcement");
 const loadError = document.querySelector("#load-error");
 const tooltip = document.querySelector("#meaning-tooltip");
 const meaningText = document.querySelector("#meaning-text");
-const backButton = document.querySelector("#back-button");
-const forwardButton = document.querySelector("#forward-button");
 
 let words = [];
 let categories = [];
@@ -45,65 +43,69 @@ let reels = [];
 let cells = [];
 let wordButtons = [];
 let pinButtons = [];
+let cellBackButtons = [];
+let cellForwardButtons = [];
 let pinned = [];
 let isSpinning = false;
 let openIndex = null;
-let history = [];
-let historyIndex = -1;
-const MAX_HISTORY = 4; // 現在＋3つ前まで
+let cellHistories = [];
+let cellHistoryIndexes = [];
+const MAX_CELL_HISTORY = 4; // 現在＋3つ前まで
 
-
-function snapshotState() {
-  return {
-    words: reels.map((reel) => reel.current),
-    pinned: [...pinned],
-  };
+function initializeCellHistories() {
+  cellHistories = reels.map((reel) => [reel.current]);
+  cellHistoryIndexes = reels.map(() => 0);
 }
 
-function syncCurrentHistorySnapshot() {
-  if (historyIndex < 0 || !history[historyIndex]) return;
-  history[historyIndex] = snapshotState();
-}
+function pushCellHistory(index, item) {
+  let history = cellHistories[index] || [];
+  let pointer = cellHistoryIndexes[index] ?? -1;
 
-function pushHistorySnapshot() {
-  // 過去に戻った状態から新しく抽選した場合は、そこより先の履歴を捨てる。
-  if (historyIndex < history.length - 1) {
-    history = history.slice(0, historyIndex + 1);
+  // 戻った状態から新しい言葉を出した場合は、その先の履歴を捨てる。
+  if (pointer < history.length - 1) {
+    history = history.slice(0, pointer + 1);
   }
 
-  history.push(snapshotState());
-  if (history.length > MAX_HISTORY) history.shift();
-  historyIndex = history.length - 1;
-  updateHistoryControls();
+  history.push(item);
+  if (history.length > MAX_CELL_HISTORY) history.shift();
+  cellHistories[index] = history;
+  cellHistoryIndexes[index] = history.length - 1;
+  updateCellHistoryControls(index);
 }
 
-function restoreHistory(index) {
-  if (isSpinning || index < 0 || index >= history.length) return;
+function restoreCellHistory(index, direction) {
+  if (isSpinning) return;
+  const history = cellHistories[index] || [];
+  const nextPointer = (cellHistoryIndexes[index] ?? 0) + direction;
+  if (nextPointer < 0 || nextPointer >= history.length) return;
+
   hideMeaning();
-  historyIndex = index;
-  const state = history[historyIndex];
-
-  pinned = [...state.pinned];
-  reels = state.words.map((item) => ({
-    previous: item,
-    current: item,
-  }));
-
-  reels.forEach((_, cellIndex) => {
-    renderReel(cellIndex, false, 0);
-    updatePinButton(cellIndex);
-  });
-  updateMakeButtonState();
-  updateHistoryControls();
-  announcement.textContent = `履歴の${historyIndex + 1}番目のことばに戻りました。`;
+  cellHistoryIndexes[index] = nextPointer;
+  const item = history[nextPointer];
+  reels[index] = { previous: item, current: item };
+  renderReel(index, false, 0);
+  updatePinButton(index);
+  updateCellHistoryControls(index);
+  announcement.textContent = `${item.word}に${direction < 0 ? "戻しました" : "進めました"}。`;
 }
 
-function updateHistoryControls() {
-  const canGoBack = !isSpinning && historyIndex > 0;
-  const canGoForward = !isSpinning && historyIndex >= 0 && historyIndex < history.length - 1;
+function updateCellHistoryControls(index) {
+  const history = cellHistories[index] || [];
+  const pointer = cellHistoryIndexes[index] ?? 0;
+  const backButton = cellBackButtons[index];
+  const forwardButton = cellForwardButtons[index];
+  if (!backButton || !forwardButton) return;
+
+  const canGoBack = !isSpinning && pointer > 0;
+  const canGoForward = !isSpinning && pointer < history.length - 1;
+  backButton.hidden = !canGoBack;
   backButton.disabled = !canGoBack;
   forwardButton.hidden = !canGoForward;
   forwardButton.disabled = !canGoForward;
+}
+
+function updateAllCellHistoryControls() {
+  reels.forEach((_, index) => updateCellHistoryControls(index));
 }
 
 function isStandaloneWord(item) {
@@ -321,7 +323,6 @@ function togglePin(index) {
   pinned[index] = !pinned[index];
   updatePinButton(index);
   updateMakeButtonState();
-  syncCurrentHistorySnapshot();
   announcement.textContent = pinned[index]
     ? `${reels[index].current.word}をピン止めしました。`
     : `${reels[index].current.word}のピン止めを解除しました。`;
@@ -360,16 +361,45 @@ function createCells() {
       togglePin(index);
     });
 
-    cell.append(wordButton, pinButton);
+    const historyNav = document.createElement("div");
+    historyNav.className = "cell-history-nav";
+
+    const cellBackButton = document.createElement("button");
+    cellBackButton.type = "button";
+    cellBackButton.className = "cell-history-button cell-back-button";
+    cellBackButton.textContent = "↶";
+    cellBackButton.hidden = true;
+    cellBackButton.setAttribute("aria-label", "このマスだけ1つ前のことばに戻す");
+    cellBackButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      restoreCellHistory(index, -1);
+    });
+
+    const cellForwardButton = document.createElement("button");
+    cellForwardButton.type = "button";
+    cellForwardButton.className = "cell-history-button cell-forward-button";
+    cellForwardButton.textContent = "↷";
+    cellForwardButton.hidden = true;
+    cellForwardButton.setAttribute("aria-label", "このマスだけ1つ新しいことばに進める");
+    cellForwardButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      restoreCellHistory(index, 1);
+    });
+
+    historyNav.append(cellBackButton, cellForwardButton);
+    cell.append(wordButton, pinButton, historyNav);
     grid.append(cell);
     wordButtons.push(wordButton);
     pinButtons.push(pinButton);
+    cellBackButtons.push(cellBackButton);
+    cellForwardButtons.push(cellForwardButton);
     return cell;
   });
 
   reels.forEach((_, index) => {
     renderReel(index);
     updatePinButton(index);
+    updateCellHistoryControls(index);
   });
 }
 
@@ -392,7 +422,7 @@ function setSpinning(spinning) {
     button.disabled = spinning;
   });
   updateMakeButtonState();
-  updateHistoryControls();
+  updateAllCellHistoryControls();
 }
 
 async function makeSeeds() {
@@ -431,6 +461,7 @@ async function makeSeeds() {
               window.setTimeout(() => {
                 renderReel(cellIndex, false, 0);
                 updatePinButton(cellIndex);
+                pushCellHistory(cellIndex, finalWord);
                 resolve();
               }, landingDuration);
               return;
@@ -448,7 +479,6 @@ async function makeSeeds() {
   );
 
   setSpinning(false);
-  pushHistorySnapshot();
   announcement.textContent = `固定したことばを残して、${spinningIndexes.length}個のことばを選び直しました。`;
 }
 
@@ -466,9 +496,9 @@ async function start() {
       current: item,
     }));
     pinned = Array(reels.length).fill(false);
+    initializeCellHistories();
     createCells();
     setSpinning(false);
-    pushHistorySnapshot();
     announcement.textContent = "9つのことばが表示されています。";
   } catch (error) {
     console.error(error);
@@ -479,8 +509,6 @@ async function start() {
 }
 
 makeButton.addEventListener("click", makeSeeds);
-backButton.addEventListener("click", () => restoreHistory(historyIndex - 1));
-forwardButton.addEventListener("click", () => restoreHistory(historyIndex + 1));
 window.addEventListener("resize", () => {
   fitAllText();
   if (openIndex !== null) placeTooltip(cells[openIndex]);

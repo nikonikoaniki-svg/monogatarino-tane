@@ -446,52 +446,63 @@ h1 {
 }
 
 
-/* History controls */
-.history-controls {
+
+
+/* Per-cell history controls */
+.cell-history-nav {
+  position: absolute;
+  z-index: 6;
+  left: 6px;
+  bottom: 6px;
   display: flex;
-  min-height: 42px;
-  margin-top: 18px;
+  gap: 3px;
+  pointer-events: auto;
+}
+
+.cell-history-button {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-}
-
-.history-button {
-  min-width: 92px;
-  height: 38px;
-  border: 1px solid #9d9487;
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.92);
-  padding: 0 14px;
-  color: #5f584e;
+  border: 1px solid #aaa195;
+  border-radius: 50%;
+  background: rgba(255, 253, 248, 0.94);
+  padding: 0;
+  color: #6f675b;
   cursor: pointer;
-  font-size: 13px;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  box-shadow: 0 2px 7px rgba(37, 31, 23, 0.08);
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(37, 31, 23, 0.08);
 }
 
-.history-button:hover:not(:disabled),
-.history-button:focus-visible {
+.cell-history-button:hover:not(:disabled),
+.cell-history-button:focus-visible {
   border-color: var(--accent);
   color: var(--accent-dark);
 }
 
-.history-button:focus-visible {
+.cell-history-button:focus-visible {
   outline: 2px solid rgba(196, 75, 47, 0.28);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
-.history-button:disabled {
-  cursor: default;
-  opacity: 0.35;
-  box-shadow: none;
-}
-
-.history-button[hidden] {
+.cell-history-button[hidden] {
   display: none;
 }
 
-.history-controls + .make-button {
-  margin-top: 10px;
+@media (max-width: 520px) {
+  .cell-history-nav {
+    left: 4px;
+    bottom: 4px;
+    gap: 2px;
+  }
+
+  .cell-history-button {
+    width: 22px;
+    height: 22px;
+    font-size: 15px;
+  }
 }
