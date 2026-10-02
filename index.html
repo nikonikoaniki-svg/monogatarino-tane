@@ -49,7 +49,7 @@
     />
     <meta name="twitter:image:alt" content="物語の種――9つのことばから、ひとつの物語を。" />
     <title>物語の種</title>
-    <link rel="stylesheet" href="style.css?v=10" />
+    <link rel="stylesheet" href="style.css?v=11" />
   </head>
   <body>
     <main class="app-shell">
@@ -69,6 +69,19 @@
           aria-busy="true"
           aria-label="物語の種となる9つのことば"
         ></div>
+
+        <div class="quick-mode-row">
+          <label class="quick-mode-control" for="quick-mode-toggle">
+            <span class="quick-mode-text">
+              <span class="quick-mode-title">時短モード</span>
+              <span class="quick-mode-note">回転なしですぐに次のことばへ</span>
+            </span>
+            <span class="switch-wrap">
+              <input id="quick-mode-toggle" class="switch-input" type="checkbox" />
+              <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+            </span>
+          </label>
+        </div>
 
         <button id="make-button" class="make-button" type="button" disabled>
           <span class="button-mark" aria-hidden="true">✦</span>
@@ -90,6 +103,6 @@
       <span id="meaning-text"></span>
     </div>
 
-    <script src="script.js?v=10"></script>
+    <script src="script.js?v=11"></script>
   </body>
 </html>

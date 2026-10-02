@@ -34,6 +34,7 @@ const makeButton = document.querySelector("#make-button");
 const buttonLabel = document.querySelector("#button-label");
 const announcement = document.querySelector("#announcement");
 const loadError = document.querySelector("#load-error");
+const quickModeToggle = document.querySelector("#quick-mode-toggle");
 const tooltip = document.querySelector("#meaning-tooltip");
 const meaningText = document.querySelector("#meaning-text");
 
@@ -434,10 +435,24 @@ async function makeSeeds() {
   if (spinningIndexes.length === 0) return;
 
   hideMeaning();
+  const finalWords = createFinalWords();
+
+  // 時短モード：回転演出をせず、その場で新しいことばへ切り替える。
+  if (quickModeToggle?.checked) {
+    spinningIndexes.forEach((cellIndex) => {
+      const finalWord = finalWords[cellIndex];
+      updateReel(cellIndex, finalWord, 0, false);
+      renderReel(cellIndex, false, 0);
+      updatePinButton(cellIndex);
+      pushCellHistory(cellIndex, finalWord);
+    });
+    announcement.textContent = `時短モードで、${spinningIndexes.length}個のことばをすぐに選び直しました。`;
+    return;
+  }
+
   setSpinning(true);
   announcement.textContent = "ピン止めしていないことばを選んでいます。";
 
-  const finalWords = createFinalWords();
   const start = performance.now();
   const stopTimes = new Map(
     spinningIndexes.map((cellIndex, order) => [
