@@ -41,6 +41,9 @@ let words = [];
 let categories = [];
 let reels = [];
 let cells = [];
+let wordButtons = [];
+let pinButtons = [];
+let pinned = [];
 let isSpinning = false;
 let openIndex = null;
 
@@ -79,19 +82,51 @@ function initialWords() {
 }
 
 function createFinalWords() {
-  const chance = Math.random();
-  const rareCount = chance < 0.8 ? 0 : chance < 0.95 ? 1 : 2;
-  const rareCategories = new Set(shuffled(categories).slice(0, rareCount));
+  const pinnedCategories = new Set(
+    reels
+      .filter((_, index) => pinned[index])
+      .map((reel) => reel.current.category),
+  );
+  const availableCategories = categories.filter(
+    (category) => !pinnedCategories.has(category),
+  );
 
-  return shuffled(
-    categories.map((category) => {
+  const chance = Math.random();
+  const rareCount =
+    availableCategories.length === 0
+      ? 0
+      : chance < 0.8
+        ? 0
+        : chance < 0.95
+          ? 1
+          : Math.min(2, availableCategories.length);
+  const rareCategories = new Set(
+    shuffled(availableCategories).slice(0, rareCount),
+  );
+
+  const selected = shuffled(
+    availableCategories.map((category) => {
       const shouldBeRare = rareCategories.has(category);
-      const pool = words.filter(
+      let pool = words.filter(
         (item) => item.category === category && item.rare === shouldBeRare,
       );
+      if (pool.length === 0) {
+        pool = words.filter((item) => item.category === category);
+      }
       return randomFrom(pool);
     }),
   );
+
+  const finalWords = Array(reels.length).fill(null);
+  let nextIndex = 0;
+  reels.forEach((reel, index) => {
+    if (pinned[index]) finalWords[index] = reel.current;
+    else {
+      finalWords[index] = selected[nextIndex];
+      nextIndex += 1;
+    }
+  });
+  return finalWords;
 }
 
 function fitText(element, maxSize, minSize) {
@@ -144,9 +179,10 @@ function createWordFace(item, hidden = false) {
 
 function renderReel(index, moving = false, duration = 0) {
   const cell = cells[index];
+  const wordButton = wordButtons[index];
   const reel = reels[index];
-  cell.replaceChildren();
-  cell.setAttribute(
+  wordButton.replaceChildren();
+  wordButton.setAttribute(
     "aria-label",
     `${reel.current.word}、${reel.current.reading}。意味を見る`,
   );
@@ -161,7 +197,7 @@ function renderReel(index, moving = false, duration = 0) {
     createWordFace(reel.current),
   );
   reelWindow.append(track);
-  cell.append(reelWindow);
+  wordButton.append(reelWindow);
 
   requestAnimationFrame(() => {
     fitAllText(cell);
@@ -204,73 +240,136 @@ function hideMeaning(index = null) {
   tooltip.hidden = true;
 }
 
+function updatePinButton(index) {
+  const isPinned = pinned[index];
+  const cell = cells[index];
+  const pinButton = pinButtons[index];
+  cell.classList.toggle("is-pinned", isPinned);
+  pinButton.classList.toggle("is-pinned", isPinned);
+  pinButton.setAttribute("aria-pressed", String(isPinned));
+  pinButton.setAttribute(
+    "aria-label",
+    isPinned
+      ? `${reels[index].current.word}のピン止めを解除`
+      : `${reels[index].current.word}をピン止め`,
+  );
+  pinButton.textContent = isPinned ? "固定中" : "ピン";
+}
+
+function togglePin(index) {
+  if (isSpinning) return;
+  hideMeaning();
+  pinned[index] = !pinned[index];
+  updatePinButton(index);
+  updateMakeButtonState();
+  announcement.textContent = pinned[index]
+    ? `${reels[index].current.word}をピン止めしました。`
+    : `${reels[index].current.word}のピン止めを解除しました。`;
+}
+
 function createCells() {
   cells = reels.map((_, index) => {
-    const cell = document.createElement("button");
-    cell.type = "button";
+    const cell = document.createElement("div");
     cell.className = "seed-cell";
-    cell.addEventListener("pointerenter", (event) => {
+
+    const wordButton = document.createElement("button");
+    wordButton.type = "button";
+    wordButton.className = "word-button";
+    wordButton.addEventListener("pointerenter", (event) => {
       if (event.pointerType === "mouse") showMeaning(index);
     });
-    cell.addEventListener("pointerleave", (event) => {
+    wordButton.addEventListener("pointerleave", (event) => {
       if (event.pointerType === "mouse") hideMeaning(index);
     });
-    cell.addEventListener("focus", () => {
+    wordButton.addEventListener("focus", () => {
       requestAnimationFrame(() => {
-        if (cell.matches(":focus-visible")) showMeaning(index);
+        if (wordButton.matches(":focus-visible")) showMeaning(index);
       });
     });
-    cell.addEventListener("blur", () => hideMeaning(index));
-    cell.addEventListener("click", () => {
+    wordButton.addEventListener("blur", () => hideMeaning(index));
+    wordButton.addEventListener("click", () => {
       if (openIndex === index) hideMeaning(index);
       else showMeaning(index);
     });
+
+    const pinButton = document.createElement("button");
+    pinButton.type = "button";
+    pinButton.className = "pin-button";
+    pinButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      togglePin(index);
+    });
+
+    cell.append(wordButton, pinButton);
     grid.append(cell);
+    wordButtons.push(wordButton);
+    pinButtons.push(pinButton);
     return cell;
   });
 
-  reels.forEach((_, index) => renderReel(index));
+  reels.forEach((_, index) => {
+    renderReel(index);
+    updatePinButton(index);
+  });
+}
+
+function updateMakeButtonState() {
+  const allPinned = pinned.length > 0 && pinned.every(Boolean);
+  makeButton.disabled = isSpinning || allPinned;
+  if (isSpinning) buttonLabel.textContent = "ことばを選んでいます…";
+  else if (allPinned) buttonLabel.textContent = "9つすべて固定中";
+  else buttonLabel.textContent = "物語の種をつくる";
 }
 
 function setSpinning(spinning) {
   isSpinning = spinning;
   grid.classList.toggle("is-spinning", spinning);
   grid.setAttribute("aria-busy", String(spinning));
-  makeButton.disabled = spinning;
-  cells.forEach((cell) => {
-    cell.disabled = spinning;
+  wordButtons.forEach((button) => {
+    button.disabled = spinning;
   });
-  buttonLabel.textContent = spinning
-    ? "ことばを選んでいます…"
-    : "物語の種をつくる";
+  pinButtons.forEach((button) => {
+    button.disabled = spinning;
+  });
+  updateMakeButtonState();
 }
 
 async function makeSeeds() {
   if (isSpinning) return;
 
+  const spinningIndexes = reels
+    .map((_, index) => index)
+    .filter((index) => !pinned[index]);
+  if (spinningIndexes.length === 0) return;
+
   hideMeaning();
   setSpinning(true);
-  announcement.textContent = "ことばを選んでいます。";
+  announcement.textContent = "ピン止めしていないことばを選んでいます。";
 
   const finalWords = createFinalWords();
   const start = performance.now();
-  const stopTimes = finalWords.map(
-    (_, index) => 2200 + index * 165 + Math.random() * 260,
+  const stopTimes = new Map(
+    spinningIndexes.map((cellIndex, order) => [
+      cellIndex,
+      2200 + order * 165 + Math.random() * 260,
+    ]),
   );
 
   await Promise.all(
-    finalWords.map(
-      (finalWord, cellIndex) =>
+    spinningIndexes.map(
+      (cellIndex, order) =>
         new Promise((resolve) => {
+          const finalWord = finalWords[cellIndex];
           const spinCell = () => {
             const elapsed = performance.now() - start;
-            const stopAt = stopTimes[cellIndex];
+            const stopAt = stopTimes.get(cellIndex);
 
             if (elapsed >= stopAt) {
               const landingDuration = 520;
               updateReel(cellIndex, finalWord, landingDuration);
               window.setTimeout(() => {
                 renderReel(cellIndex, false, 0);
+                updatePinButton(cellIndex);
                 resolve();
               }, landingDuration);
               return;
@@ -282,13 +381,13 @@ async function makeSeeds() {
             window.setTimeout(spinCell, delay);
           };
 
-          window.setTimeout(spinCell, cellIndex * 55);
+          window.setTimeout(spinCell, order * 55);
         }),
     ),
   );
 
   setSpinning(false);
-  announcement.textContent = "新しい9つのことばが決まりました。";
+  announcement.textContent = `固定したことばを残して、${spinningIndexes.length}個のことばを選び直しました。`;
 }
 
 async function start() {
@@ -304,6 +403,7 @@ async function start() {
       previous: item,
       current: item,
     }));
+    pinned = Array(reels.length).fill(false);
     createCells();
     setSpinning(false);
     announcement.textContent = "9つのことばが表示されています。";

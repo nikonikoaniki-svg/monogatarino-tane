@@ -365,3 +365,82 @@ h1 {
     font-size: 16px;
   }
 }
+
+/* Pin controls */
+.word-button {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: help;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.word-button:hover,
+.word-button:focus-visible {
+  background: var(--paper-hover);
+}
+
+.word-button:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.pin-button {
+  position: absolute;
+  z-index: 5;
+  top: 6px;
+  right: 6px;
+  min-width: 38px;
+  height: 24px;
+  border: 1px solid #a79f92;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.94);
+  padding: 0 7px;
+  color: #6f675b;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgba(37, 31, 23, 0.08);
+}
+
+.pin-button:hover:not(:disabled),
+.pin-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.pin-button:focus-visible {
+  outline: 2px solid rgba(196, 75, 47, 0.28);
+  outline-offset: 2px;
+}
+
+.pin-button.is-pinned {
+  min-width: 48px;
+  border-color: var(--accent-dark);
+  background: var(--accent);
+  color: #fffaf4;
+}
+
+.seed-cell.is-pinned::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 3px rgba(196, 75, 47, 0.46);
+}
+
+.is-spinning .seed-cell.is-pinned .reel-face {
+  background: var(--paper-light);
+}
+
+.is-spinning .seed-cell.is-pinned .word {
+  color: var(--ink);
+}
